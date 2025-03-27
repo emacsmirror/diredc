@@ -3789,8 +3789,16 @@ and navigates to that location."
      (if new-dir
        (setq new-dir (expand-file-name new-dir))
       (setq new-dir
-        (expand-file-name (read-file-name "Select directory: "
-                                          dired-directory dired-directory t)))
+        (expand-file-name
+          (read-file-name "Select directory: "
+                          dired-directory
+                          dired-directory
+                          t
+                          nil
+                          (lambda (x) (and (file-directory-p x)
+                                           (if dired-omit-mode
+                                             (not (string-match dired-omit-files x))
+                                            t))))))
       (unless (file-directory-p new-dir)
         (if (file-exists-p new-dir)
           (setq new-file      new-dir
