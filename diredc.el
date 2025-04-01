@@ -825,13 +825,14 @@ See also functions `diredc-bookmark-add' and
   :package-version '(diredc . "1.0"))
 
 (defcustom diredc-display-listing-switches-list
-    '(("classic long" . "-aFlv --group-directories-first --time-style=long-iso")
-      ("long, derefernce links, K sizes" . "-aFlv --block-size=K --group-directories-first")
-      ("long, inode, uid/gid, M sizes" . "-aFinlv  --block-size=M --group-directories-first")
-      ("long, sort by extension" .       "-aFlvX --group-directories-first"))
-;     ("classic ls-dired" . "-D")
-;     ("long, no group, K sizes" . "-oL")
-;     ("long, security context" . "-alZ")
+    '(("classic long" . "-aFlv --group-directories-first --time-style=long-iso --block-size='1")
+      ("long, derefernce links, K sizes" . "-aFlv --block-size='K --group-directories-first")
+      ("long, derefernce links, M sizes" . "-aFlv --block-size=M --group-directories-first")
+      ("long, inode, uid/gid, M sizes" . "-aFinlv  --block-size=M --group-directories-first"))
+;     ("long, sort by extension" .       "-aFlvX --group-directories-first "))
+;     ("classic ls-dired" . "-bD")
+;     ("long, no group, K sizes" . "-boL")
+;     ("long, security context" . "-ablZ")
 
 "How to display a `dired' buffer.
 This is merely a list of values suitable for defcustom
