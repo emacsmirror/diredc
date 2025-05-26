@@ -4066,6 +4066,10 @@ window, and if ARG is non-nil visits it in a second dired window
 on the same frame. If point is on a non-directory file, visits
 the file in another frame."
   (interactive)
+  (let ((target (substring-no-properties (dired-get-file-for-visit))))
+    (when (or (and (file-directory-p target) (not (file-accessible-directory-p target)))
+              (not (file-readable-p target)))
+      (user-error "Permission denied: %s" target)))
   ;; TODO: Maybe this check should be done more often.
   ;; TODO: If this is really a wide dired problem, report it to emacs.
   (diredc--abort-on-directory-deleted dired-directory)
