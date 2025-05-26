@@ -1,4 +1,15 @@
 * diredc NEWS
+** 2025-05
++ Modify default listing switches to display thousands delimiters for
+  large file sizes.
+
++ Bug fixes
+
+  + Check permissions before attempting to find a file or directory
+
+  + Improve handling of dired-omit mode
+
+  + Improve alignment of columns when using diredc-collapse
 ** 2024-04
 
 + New feature to browse the magit-status of a repository root
