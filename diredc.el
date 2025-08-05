@@ -3786,34 +3786,55 @@ Optionally, navigate prefix argument ARG number of history elements."
     (user-error "Diredc-history-mode not enabled"))
   (diredc-hist-previous-directory (- arg)))
 
-(defun diredc-hist-change-directory (&optional new-dir)
+(defun diredc-hist-change-directory (&optional new-dir select)
   "Prompt the user to navigate the Dired window anywhere.
 
 When called interactively with a prefix argument and
-`diredc-history-mode' active, runs `diredc-hist-select' instead
-to allow explicit selection of a specific directory in the
-buffer's history.
+`diredc-history-mode' active, prompts a direct selection from among the
+current history elements, via function `popup-menu*' or
+`completing-read'. If you have package `popup' installed, but don't want
+to use it for this purpose, see customization variable
+`diredc-hist-select-without-popup'.
 
-When called from Lisp, optional arg NEW-DIR suppresses the prompting
-and navigates to that location."
+When called from Lisp, optional arg NEW-DIR suppresses the prompting and
+navigates to that location.
+
+2025-08: Optional arg SELECT is deprecated. Do not use it. Setting it
+NON-NIL is equivalent to calling the function with a PREFIX-ARG."
   (interactive)
   (when (eq major-mode 'wdired-mode)
     (user-error "Please exit `wdired-mode' before attempting to change directories"))
+  (when current-prefix-arg
+    (if (not diredc-history-mode)
+      (user-error "Requires diredc-history mode")
+     (setq select t)))
   (and (not (eq major-mode 'dired-mode))
        (fboundp 'diredc-frame-quick-switch)
        (diredc-frame-quick-switch))
   (when diredc-history-mode
     (diredc-hist--prune-deleted-directories))
-  (if (and diredc-history-mode
-           current-prefix-arg)
-    (diredc-hist-select)
-   (let (file-to-find new-file new-hist hist pos restore-point)
-     (when diredc-history-mode
-       (setq hist diredc-hist--history-list
-             pos  diredc-hist--history-position))
-     (if new-dir
-       (setq new-dir (expand-file-name new-dir))
-      (setq new-dir
+  (let ((hist diredc-hist--history-list)
+        (pos  diredc-hist--history-position)
+        file-to-find new-file new-hist restore-point)
+   (setq new-dir
+     (cond
+      (new-dir
+        (expand-file-name new-dir))
+      (select
+        (let* ((diredc--hist-select--data (mapcar 'car hist)))
+          (if (or diredc-hist-select-without-popup
+                  (not (require 'popup nil 'noerror)))
+            (completing-read "Select: "
+                             diredc--hist-select--data ; COLLECTION
+                             nil                       ; PREDICATE
+                             t                         ; REQUIRE-MATCH
+                             nil                       ; INITIAL-INPUT
+                             (cons 'diredc--hist-select--data pos)) ; HIST
+           (substring-no-properties
+             (popup-menu* diredc--hist-select--data
+                          :point (point-min)
+                          :initial-index pos)))))
+      (t
         (expand-file-name
           (read-file-name "Select directory: "
                           dired-directory
@@ -3823,42 +3844,42 @@ and navigates to that location."
                           (lambda (x) (and (file-directory-p x)
                                            (if dired-omit-mode
                                              (not (string-match dired-omit-files x))
-                                            t))))))
-      (unless (file-directory-p new-dir)
-        (if (file-exists-p new-dir)
-          (setq new-file      new-dir
-                new-dir       (file-name-directory new-dir)
-                file-to-find (concat "\s\\(" (file-name-nondirectory new-file) "\\)\n"))
-         (when (yes-or-no-p (format "Directory %s does not exist. Create it? " new-dir))
-           (dired-create-directory new-dir))
-           (message "")))) ; clear echo area (emacs 26) when answer is 'no'
-     (when (file-directory-p new-dir)
-       (when diredc-history-mode
-         (setf (nth 1 (nth pos hist)) (point))
-         (setf (nth 2 (nth pos hist)) dired-omit-mode))
-       (let ((omit-mode dired-omit-mode)
-             (special-sort diredc--sort-option-special))
-         (set-window-dedicated-p nil nil)
-         (find-alternate-file new-dir)
-         (set-window-dedicated-p nil t)
-         (diredc--set-omit-mode omit-mode)
-         (when (setq restore-point
-                 (diredc--hist-guess-restore-point hist pos))
-           (goto-char restore-point))
-         (when special-sort
-           (diredc--sort-special special-sort)))
+                                            t))))))))
+   (unless (file-directory-p new-dir)
+     (if (file-exists-p new-dir)
+       (setq new-file      new-dir
+             new-dir       (file-name-directory new-dir)
+             file-to-find (concat "\s\\(" (file-name-nondirectory new-file) "\\)\n"))
+      (when (yes-or-no-p (format "Directory %s does not exist. Create it? " new-dir))
+        (dired-create-directory new-dir))
+        (message ""))) ; clear echo area (emacs 26) when answer is 'no'
+   (when (file-directory-p new-dir)
+     (when diredc-history-mode
+       (setf (nth 1 (nth pos hist)) (point))
+       (setf (nth 2 (nth pos hist)) dired-omit-mode))
+     (let ((omit-mode dired-omit-mode)
+           (special-sort diredc--sort-option-special))
+       (set-window-dedicated-p nil nil)
+       (find-alternate-file new-dir)
        (set-window-dedicated-p nil t)
-       (while (and file-to-find
-                   (re-search-forward file-to-find nil t))
-         (backward-char 2)
-         (when (string-match-p new-file
-                               (expand-file-name (dired-file-name-at-point)))
-           (setq file-to-find nil)
-           (goto-char (match-beginning 1))))
-       (when diredc-history-mode
-         (setq new-hist (diredc-hist--update-directory-history hist pos)
-               diredc-hist--history-list (car new-hist)
-               diredc-hist--history-position (cdr new-hist)))))))
+       (diredc--set-omit-mode omit-mode)
+       (when (setq restore-point
+               (diredc--hist-guess-restore-point hist pos))
+         (goto-char restore-point))
+       (when special-sort
+         (diredc--sort-special special-sort)))
+     (set-window-dedicated-p nil t)
+     (while (and file-to-find
+                 (re-search-forward file-to-find nil t))
+       (backward-char 2)
+       (when (string-match-p new-file
+                             (expand-file-name (dired-file-name-at-point)))
+         (setq file-to-find nil)
+         (goto-char (match-beginning 1))))
+     (when diredc-history-mode
+       (setq new-hist (diredc-hist--update-directory-history hist pos)
+             diredc-hist--history-list (car new-hist)
+             diredc-hist--history-position (cdr new-hist))))))
 
 (defun diredc-hist-up-directory (&optional arg)
   "Navigate the Dired window to its parent directory.
@@ -3931,38 +3952,12 @@ With optional prefix argument, repeat ARG times."
   "Navigate anywhere in the Dired history directly.
 
 If you have package `popup' installed, but don't want to use it
-for this purpose, see `diredc-hist-select-without-popup'."
+for this purpose, see `diredc-hist-select-without-popup'.
+
+2025-08: This function is deprecated. Do not use it. Instead, call
+function `diredc-hist-change-directory' with a PREFIX-ARG."
   (interactive)
-  (when (not diredc-history-mode)
-    (user-error "Requires diredc-history mode"))
-  (diredc-hist--prune-deleted-directories)
-  (let* ((hist diredc-hist--history-list)
-         (pos  diredc-hist--history-position)
-         (diredc--hist-select--data (mapcar 'car hist))
-         (new (if (or diredc-hist-select-without-popup
-                      (not (require 'popup nil 'noerror)))
-                (completing-read "Select: "
-                                 diredc--hist-select--data ; COLLECTION
-                                 nil                       ; PREDICATE
-                                 t                         ; REQUIRE-MATCH
-                                 nil                       ; INITIAL-INPUT
-                                 (cons 'diredc--hist-select--data pos)) ; HIST
-               (substring-no-properties
-                 (popup-menu* diredc--hist-select--data
-                              :point (point-min)
-                              :initial-index pos))))
-         hist-elem)
-    (when new
-      (setf (nth 1 (nth pos hist)) (point))
-      (setf (nth 2 (nth pos hist)) dired-omit-mode)
-      (find-alternate-file new)
-      (set-window-dedicated-p nil t)
-      (setq new (diredc-hist--update-directory-history hist pos)
-            diredc-hist--history-list (car new)
-            diredc-hist--history-position (cdr new)
-            hist-elem (nth (cdr new) (car new)))
-      (diredc--set-omit-mode (nth 2 hist-elem))
-      (goto-char (nth 1 hist-elem)))))
+  (diredc-hist-change-directory nil 'select))
 
 (defun diredc-hist-duplicate (&optional arg)
   "Navigate a second `dired' buffer to a duplicate location.
