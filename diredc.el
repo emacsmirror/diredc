@@ -1453,6 +1453,13 @@ Don't ever set this variable directly! Instead, evaluate function
 installed, that this mode will always be updated to follow its
 change of state.")
 
+(defvar diredc--hist-select--data nil
+  "Collection of history elements.
+
+Internal variable required in order to dynamically scope the collection
+for use by external completion and narrowing frameworks (eg.
+`completing-read', `ivy').")
+
 (defvar diredc-recover-schemes
   '((0 ; no `dired' buffers found
      ("create-two" .
@@ -3914,12 +3921,19 @@ for this purpose, see `diredc-hist-select-without-popup'."
   (diredc-hist--prune-deleted-directories)
   (let* ((hist diredc-hist--history-list)
          (pos  diredc-hist--history-position)
-         (options (mapcar 'car hist))
+         (diredc--hist-select--data (mapcar 'car hist))
          (new (if (or diredc-hist-select-without-popup
                       (not (require 'popup nil 'noerror)))
-                (completing-read "Select: " options nil t nil (cons 'options pos))
+                (completing-read "Select: "
+                                 diredc--hist-select--data ; COLLECTION
+                                 nil                       ; PREDICATE
+                                 t                         ; REQUIRE-MATCH
+                                 nil                       ; INITIAL-INPUT
+                                 (cons 'diredc--hist-select--data pos)) ; HIST
                (substring-no-properties
-                 (popup-menu* options :point (point-min) :initial-index pos))))
+                 (popup-menu* diredc--hist-select--data
+                              :point (point-min)
+                              :initial-index pos))))
          hist-elem)
     (when new
       (setf (nth 1 (nth pos hist)) (point))
