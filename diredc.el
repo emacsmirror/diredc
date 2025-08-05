@@ -1,6 +1,6 @@
 ;;; diredc.el --- Midnight Commander features (plus) for dired -*- lexical-binding: t -*-
 
-;; Copyright © 2020-2024, Boruch Baum <boruch_baum@gmx.com>
+;; Copyright © 2020-2025, Boruch Baum <boruch_baum@gmx.com>
 
 ;; Author/Maintainer: Boruch Baum <boruch_baum@gmx.com>
 ;; Homepage: https://github.com/Boruch-Baum/emacs-diredc

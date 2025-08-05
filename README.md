@@ -377,7 +377,7 @@ The traditional `dired` operations that `find` or `open` a file should
 
 ## Colophon
 
-* Copyright © 2020-2024, Boruch Baum <boruch_baum@gmx.com>
+* Copyright © 2020-2025, Boruch Baum <boruch_baum@gmx.com>
 * Author/Maintainer: Boruch Baum <boruch_baum@gmx.com>
 * Homepage: https://github.com/Boruch-Baum/emacs-diredc
 * SPDX-License-Identifier: GPL-3.0-or-later
