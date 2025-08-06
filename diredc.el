@@ -379,14 +379,23 @@
 ;;
 ;;; Compatibility
 ;;
-;; This package has been tested under debian linux emacs version 26
-;; and 27. The main compatibility issue to be aware of is that this
-;; suite needs to modify[1] a single line in function
+;; This package was orginally developed and tested under Debian linux
+;; Emacs version 26 and has been tested through Emacs version 30.
+;;
+;; The main compatibility issue to be aware of is that this suite
+;; needs to modify[1] a single line in function
 ;; `dired-internal-no-select' of the standard emacs file `dired.el'
 ;; This was accomplished by advising a wrapper function
 ;; `diredc--advice--dired-internal-noselect' around the original. If
 ;; that function ever changes, that advice function and this suite
 ;; will need to account for that.
+;;
+;; Emacs version 30 made changes to file `dired-aux.el' that may
+;; affect `diredc': Variables `dired-aux-files' and
+;; `minibuffer-default-add-dired-shell-commands' have been deleted,
+;; and the way `dired' associates files with external programs has
+;; been overhauled. See Emacs commit b8d4242, 2023-11-27 Juri Linkov).
+
 ;;
 ;; [1] emacs bug #44023: https://debbugs.gnu.org/cgi/bugreport.cgi?bug=44023"
 
@@ -1426,8 +1435,10 @@ buffer's `hl-line' face. See function
 
 (defvar-local dired-aux-files nil
   "Variable requiring definition for package `dired-aux'.
-It is used by function `dired-read-shell-command' which `diredc'
-advises with function `diredc--advice--dired-read-shell-command'.")
+Prior to Emacs version 30, It is used by function
+`dired-read-shell-command' which `diredc' advises with function
+`diredc--advice--dired-read-shell-command'. The variable was deleted
+from Emacs 30 in commit b8d4242, 2023-11-27 Juri Linkov.")
 
 (defvar-local diredc--sort-option-special nil
   "Whether the sort option uses \"ls\" switches or a `diredc' method.
@@ -1839,6 +1850,9 @@ locally define `dired-read-shell-command'. See there."
         (setq-local dired-aux-files files)
         (setq-local minibuffer-default-add-function
                     #'minibuffer-default-add-dired-shell-commands))
+;; TODO: Function `minibuffer-default-add-dired-shell-commands' and
+;; variable `dired-aux-files' and were deleted from Emacs 30 by Emacs
+;; commit b8d4242 (2023-11-27 Juri Linkov).
     (setq prompt (format prompt (dired-mark-prompt arg files)))
     (let (command)
       (setq command
@@ -3657,6 +3671,9 @@ ARG is the prefix-arg."
                 (setq-local dired-aux-files files)
                 (setq-local minibuffer-default-add-function
                             #'minibuffer-default-add-dired-shell-commands))
+;; TODO: Function `minibuffer-default-add-dired-shell-commands' and
+;; variable `dired-aux-files' and were deleted from Emacs 30 by Emacs
+;; commit b8d4242 (2023-11-27 Juri Linkov).
             (setq prompt (format prompt (dired-mark-prompt arg files)))
             (let (command)
               (setq command

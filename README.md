@@ -357,15 +357,23 @@ The traditional `dired` operations that `find` or `open` a file should
 
 ## Compatibility
 
- This package has been tested under Debian linux Emacs version 26 and
- 27. The main compatibility issue to be aware of is that this suite needs
- to modify[1] a single line in function `dired-internal-no-select` of the
- standard emacs file `dired.el`. This was accomplished by advising a
- wrapper function `diredc--advice--dired-internal-noselect` around the
- original. If that function ever changes, that advice function and this
- suite will need to account for that.
+ This package was orginally developed and tested under Debian linux
+ Emacs version 26 and has been tested through Emacs version 30.
 
- [1] emacs bug #44023: https://debbugs.gnu.org/cgi/bugreport.cgi?bug=44023"
+ The main compatibility issue to be aware of is that this suite needs
+ to modify[1] a single line in function `dired-internal-no-select` of
+ the standard emacs file `dired.el`. This was accomplished by advising
+ a wrapper function `diredc--advice--dired-internal-noselect` around
+ the original. If that function ever changes, that advice function and
+ this suite will need to account for that.
+
+ Emacs version 30 made changes to file `dired-aux.el` that may affect
+ `diredc`: Variables `minibuffer-default-add-dired-shell-commands` and
+ `dired-aux-files` have been deleted, and the way `dired` associates
+ files with external programs has been overhauled. See Emacs commit
+ b8d4242 (2023-11-27 Juri Linkov).
+
+[1] emacs bug #44023: https://debbugs.gnu.org/cgi/bugreport.cgi?bug=44023"
 
 ## Colophon
 
