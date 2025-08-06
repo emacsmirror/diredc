@@ -577,7 +577,7 @@ filename (for example when the final directory is empty)."
                       ;; fix alignment of single-digit hard-link columns
                       (and (not dired-hide-details-mode)
                            (setq bound (dired-move-to-filename))
-                           (goto-char (pos-bol))
+                           (goto-char (line-beginning-position))
                            (re-search-forward "[^ ] " bound t)
                            (looking-at "[0-9] ")
                            (insert " ")))
