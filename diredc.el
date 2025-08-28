@@ -394,7 +394,11 @@
 ;; affect `diredc': Variables `dired-aux-files' and
 ;; `minibuffer-default-add-dired-shell-commands' have been deleted,
 ;; and the way `dired' associates files with external programs has
-;; been overhauled. See Emacs commit b8d4242, 2023-11-27 Juri Linkov).
+;; been overhauled. See Emacs commit b8d4242, 2023-11-27 Juri Linkov
+;; and new variable `shell-command-guess-functions'. See also related
+;; Emacs commit 9ebe6aa (2024-05-24 Juri Linkov) and new command
+;; `dired-do-open'.
+
 
 ;;
 ;; [1] emacs bug #44023: https://debbugs.gnu.org/cgi/bugreport.cgi?bug=44023"
@@ -822,11 +826,20 @@ non-nil for the session."
 Each entry is a CONS, whose CAR is a directory, and whose CDR is
 a short descriptive string.
 
-See also functions `diredc-bookmark-add' and
-`diredc-bookmark-jump'."
+See also functions `diredc-bookmark-add',`diredc-bookmark-jump', and
+`diredc-bookmark-edit'."
   :type '(repeat (cons (directory :tag "Directory to bookmark")
                        (string    :tag "Description / Annotation")))
   :package-version '(diredc . "1.0"))
+
+(defcustom diredc-bookmarks-add-to-history-list t
+  "Whether bookmark entries should appear in history navigation list.
+
+Feature note: If you want to be sneaky and you label a bookmark with
+some random but valid directory string, then Diredc will navigate to
+there."
+  :type 'boolean
+  :package-version '(diredc . "1.6"))
 
 (defcustom diredc-hist-select-without-popup nil
   "Function `dir-hist-select' should never use package `popup'."
@@ -1852,7 +1865,9 @@ locally define `dired-read-shell-command'. See there."
                     #'minibuffer-default-add-dired-shell-commands))
 ;; TODO: Function `minibuffer-default-add-dired-shell-commands' and
 ;; variable `dired-aux-files' and were deleted from Emacs 30 by Emacs
-;; commit b8d4242 (2023-11-27 Juri Linkov).
+;; commit b8d4242 (2023-11-27 Juri Linkov) and new variable
+;; `shell-command-guess-function'. See also related Emacs commit
+;; 9ebe6aa (2024-05-24 Juri Linkov) and new command `dired-do-open'
     (setq prompt (format prompt (dired-mark-prompt arg files)))
     (let (command)
       (setq command
@@ -3673,7 +3688,14 @@ ARG is the prefix-arg."
                             #'minibuffer-default-add-dired-shell-commands))
 ;; TODO: Function `minibuffer-default-add-dired-shell-commands' and
 ;; variable `dired-aux-files' and were deleted from Emacs 30 by Emacs
-;; commit b8d4242 (2023-11-27 Juri Linkov).
+;; commit b8d4242 (2023-11-27 Juri Linkov) and new variable
+;; `shell-command-guess-functions'. See also related Emacs commit
+;; 9ebe6aa (2024-05-24 Juri Linkov) and new command `dired-do-open'.
+;; See also related `dired-guess', `dired-guess-shell-alist-optional',
+;; `dired-guess-shell-alist-default', `dired-guess-shell-alist-user',
+;; `shell-command-guess-functions', `shell-command-guess-dired-user',
+;; `shell-command-guess-dired-default',
+;; `shell-command-guess-dired-optional'
             (setq prompt (format prompt (dired-mark-prompt arg files)))
             (let (command)
               (setq command
@@ -3821,19 +3843,31 @@ NON-NIL is equivalent to calling the function with a PREFIX-ARG."
       (new-dir
         (expand-file-name new-dir))
       (select
-        (let* ((diredc--hist-select--data (mapcar 'car hist)))
-          (if (or diredc-hist-select-without-popup
-                  (not (require 'popup nil 'noerror)))
-            (completing-read "Select: "
-                             diredc--hist-select--data ; COLLECTION
-                             nil                       ; PREDICATE
-                             t                         ; REQUIRE-MATCH
-                             nil                       ; INITIAL-INPUT
-                             (cons 'diredc--hist-select--data pos)) ; HIST
-           (substring-no-properties
-             (popup-menu* diredc--hist-select--data
-                          :point (point-min)
-                          :initial-index pos)))))
+        (let* ((diredc--hist-select--data
+                 (nconc (mapcar 'car hist)
+                        (when diredc-bookmarks-add-to-history-list
+                          (mapcar 'cdr diredc-bookmarks))))
+               response)
+          (if (file-directory-p
+                (setq response
+                  (if (or diredc-hist-select-without-popup
+                          (not (require 'popup nil 'noerror)))
+                    (completing-read "Select: "
+                                     diredc--hist-select--data ; COLLECTION
+                                     nil                       ; PREDICATE
+                                     t                         ; REQUIRE-MATCH
+                                     nil                       ; INITIAL-INPUT
+                                     (cons 'diredc--hist-select--data pos)) ; HIST
+                   (substring-no-properties
+                     (popup-menu* diredc--hist-select--data
+                                  :point (point-min)
+                                  :initial-index pos)))))
+            response
+           (if (file-directory-p
+                 (setq response
+                   (car (rassoc response diredc-bookmarks))))
+             response
+            (error "Diredc history response corrupted.")))))
       (t
         (expand-file-name
           (read-file-name "Select directory: "

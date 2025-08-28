@@ -1,4 +1,13 @@
 * diredc NEWS
+** 2025-08
++ New feature to add bookmarks to history list direct navigation.
+
+  + diredc-bookmarks-add-to-history-list
+
+  + Effective for C-u M-x diredc-hist-change-directory
+
+    + Default keybinding: C-u /
+
 ** 2025-05
 + Modify default listing switches to display thousands delimiters for
   large file sizes.
