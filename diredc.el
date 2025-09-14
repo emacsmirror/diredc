@@ -4210,13 +4210,15 @@ the file in another frame."
             (cond
              ((or (not win)
                   (and win (equal (window-frame win) (window-frame))))
-              ; file is already viewable in current frame, so select it in
-              ; another frame
+              ;; file is already viewable in current frame,
+              ;; so select it in another frame
                (select-frame-set-input-focus
                  (if (< 1 (length (frame-list)))
                    (next-frame)
                   (make-frame diredc-frame-parameters)))
-               (find-file target))
+               (condition-case err ; return to diredc on failure
+                 (find-file target)
+                 (error (diredc))))
              (t ; ie. win ; file is already viewable in another frame, so select it
                (select-window win))))))))))
 
