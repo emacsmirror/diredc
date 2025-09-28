@@ -2468,7 +2468,7 @@ For keybindings and environment variables."
   (setq-local diredc--shell-point (point-max)) ; See kludge below.
   (funcall comint-input-sender
            (get-buffer-process (current-buffer))
-           (format " export INSIDE_DIREDC=\"%s\" d1='%s' d2='%s' f1='%s' f2='%s' t1='%s' t2='%s'; printf 'diredc-shell: Use C-c C-k to close this pop-up shell.\ndiredc-shell: Special variables: $d1 $d2 $f1 $f2 $t1 $t2%s\n'"
+           (format " export INSIDE_DIREDC=\"%s\" d1=\"%s\" d2=\"%s\" f1=\"%s\" f2=\"%s\" t1=\"%s\" t2=\"%s\"; printf 'diredc-shell: Use C-c C-k to close this pop-up shell.\ndiredc-shell: Special variables: $d1 $d2 $f1 $f2 $t1 $t2%s\n'"
                    diredc--version
                    d1 (or d2 "") (or f1 "") (or f2 "")
                    (diredc-shell--array-variable program t1)
@@ -2476,7 +2476,7 @@ For keybindings and environment variables."
                    (if (equal d2 "")
                      "\ndiredc-shell: Variables d2,f2,t2 not set. (More than two dired buffers visible)."
                     "")))
-  ;; TODO: 2024-04: It seems that at this point (Emacs 29.2), there is
+  ;; TODO: 2025-09: It seems that at this point (Emacs 30.1), there is
   ;; no way to nicely wait on a change of state in the comint buffer
   ;; (eg. process-sentinel). Revisit this situation periodically so we
   ;; can replace the following kludge.
