@@ -3003,9 +3003,22 @@ details."
 (defun diredc-shell-kill ()
   "Kill the current shell window, buffer, and process."
   (interactive)
-  ;; TODO preform sanity check here (only use in diredc shell buffers)
+  ;; TODO perform sanity check here (only use in diredc shell buffers)
   (let ((return-window diredc-shell--bufwin)
+        (diredc--shell-point (point-max)) ; See kludge below.
         proc)
+    (funcall comint-input-sender
+             (get-buffer-process (current-buffer))
+             " history -w")
+    ;; TODO: 2025-09: It seems that at this point (Emacs 301.), there is
+    ;; no way to nicely wait on a change of state in the comint buffer
+    ;; (eg. process-sentinel). Revisit this situation periodically so we
+    ;; can replace the following kludge.
+    (cl-loop
+      repeat 10
+      do (sleep-for 0.1)
+      until
+        (not (equal diredc--shell-point (point-max))))
     (while (and (setq proc (get-buffer-process (current-buffer)))
                 (process-live-p proc))
       (set-process-query-on-exit-flag proc nil)
