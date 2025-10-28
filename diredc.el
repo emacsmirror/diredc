@@ -2118,6 +2118,20 @@ face `diredc-hl-current-buffer'."
              (face-remap-remove-relative diredc--hl-cookie)
              (setq diredc--hl-cookie nil)))))))
 
+(defun diredc--find-file-hook-function ()
+  "Don't use the `diredc' frame for visiting files.
+In other words, when explicitly calling M-x `find-file' from a `diredc'
+frame, move the window and buffer to some other frame.
+
+This function is meant to be added to the list variable `find-file-hook'
+while `diredc' is active."
+(when (string= "diredc"
+               (substring-no-properties
+                 (cdr (assoc 'name (frame-parameters)))))
+  (let ((buf (current-buffer)))
+    (other-frame -1)
+    (switch-to-buffer buf))))
+
 
 ;;
 ;;; Functions:
@@ -4411,6 +4425,7 @@ turn the mode on; Otherwise, turn it off."
      (setq diredc-allow-duplicate-buffers t
            diredc--lc-collate-original-value (getenv "LC_COLLATE"))
      (add-hook 'dired-mode-hook  #'diredc--hook-function)
+     (add-hook 'find-file-hook   #'diredc--find-file-hook-function)
      (add-to-list 'window-state-change-functions 'diredc--window-state-change-hook-function)
      (advice-add 'dired-repeat-over-lines
                  :around #'diredc--advice--repeat-over-lines)
@@ -4438,6 +4453,7 @@ turn the mode on; Otherwise, turn it off."
      (message "Diredc-mode enabled in all Dired buffers."))
    (t
      (remove-hook 'dired-mode-hook #'diredc--hook-function)
+     (remove-hook 'find-file-hook  #'diredc--find-file-hook-function)
      (setq window-state-change-functions
        (delq 'diredc--window-state-change-hook-function
              window-state-change-functions))
