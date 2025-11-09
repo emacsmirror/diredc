@@ -1946,6 +1946,50 @@ there applies the fix by changing also function
        (move-marker pos nil)
        (dired-move-to-filename)))))
 
+(defun diredc--advice--find-file (_oldfun filename &optional wildcards)
+  "Prevent `find-file' from opening windows in `diredc' frame.
+
+This advice is fixes two behaviors of `find-file' that are undesirable
+for and inconsistent with `diredc' when invoked with the `diredc' frame
+active:
+
+1) `find-file' would open files in a new window in the `diredc' frame.
+   Originally, `diredc' handled this with a hook function added to
+   variable `find-file-hooks'.
+
+2) When a user would select a directory from the `find-file' prompt,
+   `find-file' would open the directory in a new `dired' window in the
+   `diredc' frame. In this case, the functions in `find-file-hooks'
+   would not be evaluated. Thus, this advice. And once `diredc' was
+   using the advice anyway, it incorporates the functionality previously
+   performed by the hook function.
+
+This implementation continues to allow users to open `dired' windows and
+buffers independent of `diredc' when in non-`diredc' frames, ie. when
+the `diredc' frame is not the active one.
+
+Usage: (advice-add \='find-file
+                   :around #\='diredc--advice--find-file)"
+  (interactive
+    (find-file-read-args "Find file: "
+                         (confirm-nonexistent-file-or-buffer)))
+  (cond
+   ((string= "diredc"
+             (substring-no-properties
+               (cdr (assoc 'name (frame-parameters)))))
+     (if (file-directory-p filename)
+       (diredc-hist-change-directory filename)
+      (other-frame -1)
+      (let ((value (find-file-noselect filename nil nil wildcards)))
+        (if (listp value)
+          (mapcar 'pop-to-buffer-same-window (nreverse value))
+         (pop-to-buffer-same-window value)))))
+   (t ; not in a diredc frame
+     (let ((value (find-file-noselect filename nil nil wildcards)))
+       (if (listp value)
+         (mapcar 'pop-to-buffer-same-window (nreverse value))
+        (pop-to-buffer-same-window value))))))
+
 
 ;;
 ;;; Functions - hook functions:
@@ -2118,19 +2162,6 @@ face `diredc-hl-current-buffer'."
              (face-remap-remove-relative diredc--hl-cookie)
              (setq diredc--hl-cookie nil)))))))
 
-(defun diredc--find-file-hook-function ()
-  "Don't use the `diredc' frame for visiting files.
-In other words, when explicitly calling M-x `find-file' from a `diredc'
-frame, move the window and buffer to some other frame.
-
-This function is meant to be added to the list variable `find-file-hook'
-while `diredc' is active."
-(when (string= "diredc"
-               (substring-no-properties
-                 (cdr (assoc 'name (frame-parameters)))))
-  (let ((buf (current-buffer)))
-    (other-frame -1)
-    (switch-to-buffer buf))))
 
 
 ;;
@@ -4425,7 +4456,6 @@ turn the mode on; Otherwise, turn it off."
      (setq diredc-allow-duplicate-buffers t
            diredc--lc-collate-original-value (getenv "LC_COLLATE"))
      (add-hook 'dired-mode-hook  #'diredc--hook-function)
-     (add-hook 'find-file-hook   #'diredc--find-file-hook-function)
      (add-to-list 'window-state-change-functions 'diredc--window-state-change-hook-function)
      (advice-add 'dired-repeat-over-lines
                  :around #'diredc--advice--repeat-over-lines)
@@ -4440,6 +4470,8 @@ turn the mode on; Otherwise, turn it off."
                  :around #'diredc--advice--dired-run-shell-command)
      (advice-add 'dired-read-shell-command
                  :around #'diredc--advice--dired-read-shell-command)
+     (advice-add 'find-file
+                 :around #'diredc--advice--find-file)
      (dolist (buf dired-buffers)
        (if (not (buffer-live-p (cdr buf)))
          (setq dired-buffers (remove buf dired-buffers))
@@ -4453,7 +4485,6 @@ turn the mode on; Otherwise, turn it off."
      (message "Diredc-mode enabled in all Dired buffers."))
    (t
      (remove-hook 'dired-mode-hook #'diredc--hook-function)
-     (remove-hook 'find-file-hook  #'diredc--find-file-hook-function)
      (setq window-state-change-functions
        (delq 'diredc--window-state-change-hook-function
              window-state-change-functions))
@@ -4471,6 +4502,8 @@ turn the mode on; Otherwise, turn it off."
                     #'diredc--advice--dired-run-shell-command)
      (advice-remove 'dired-read-shell-command
                     #'diredc--advice--dired-read-shell-command)
+     (advice-remove 'find-file
+                     #'diredc--advice--find-file)
      (diredc--unset-created-faces)
      (dolist (buf dired-buffers)
        (if (not (buffer-live-p (cdr buf)))
