@@ -984,6 +984,15 @@ See (info \"(elisp) Frame Parameters\")."
   :package-version '(diredc . "1.2")
   :group 'diredc-frame)
 
+(defcustom diredc-frame-allow-find-file nil
+  "Allow `find-file' to create windows in the `diredc' frame.
+Using this defeats the purpose of `diredc', but the option is provided
+here to respect user configurability (and because this was the default
+behavior for years before the bug was discovered. Ahem.)."
+  :type 'boolean
+  :package-version '(diredc . "1.6")
+  :group 'diredc-frame)
+
 (defgroup diredc-shell nil
   "Pop-up shell settings."
   :group 'diredc)
@@ -1974,9 +1983,10 @@ Usage: (advice-add \='find-file
     (find-file-read-args "Find file: "
                          (confirm-nonexistent-file-or-buffer)))
   (cond
-   ((string= "diredc"
-             (substring-no-properties
-               (cdr (assoc 'name (frame-parameters)))))
+   ((and (string= "diredc"
+                      (substring-no-properties
+                        (cdr (assoc 'name (frame-parameters)))))
+         (not diredc-frame-allow-find-file))
      (if (file-directory-p filename)
        (diredc-hist-change-directory filename)
       (other-frame -1)
