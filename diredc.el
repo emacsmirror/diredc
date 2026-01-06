@@ -2568,15 +2568,27 @@ If optional ANSI is NON-NIL, then the program is run in Emacs
 _PROGRAM is an ignored placeholder for consistency with similar
 functions. D1, D2, F1, F2, T1, and T2 are shell variables to be
 set based upon their dired values."
-  (let ((buf (eshell)))
-    (setq-local d1 d1)
-    (setq-local f1 f1)
-    (setq-local t1 t1)
-    (setq-local d2 d2)
-    (setq-local f2 f2)
-    (setq-local t2 t2)
-    (diredc-shell--bind-keys)
-    buf))
+  (cond
+   ((string> emacs-version "29.4")
+     (let ((buf (eshell)))
+       (setq-local $d1 d1)
+       (setq-local $f1 f1)
+       (setq-local $t1 t1)
+       (setq-local $d2 d2)
+       (setq-local $f2 f2)
+       (setq-local $t2 t2)
+       (diredc-shell--bind-keys)
+       buf))
+   (t ; emacs version before 30
+     (let ((buf (eshell)))
+       (setq-local d1 d1)
+       (setq-local f1 f1)
+       (setq-local t1 t1)
+       (setq-local d2 d2)
+       (setq-local f2 f2)
+       (setq-local t2 t2)
+       (diredc-shell--bind-keys)
+       buf))))
 
 (defun diredc-shell--launch-term (program d1 d2 f1 f2 t1 t2)
   "Internal function for use with variable `diredc-shell-list'.
