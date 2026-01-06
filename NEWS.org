@@ -5,16 +5,9 @@
 
   + write / update shell history upon closing window
 
-  + properly initialize all pre-defined shell variables for all shell
-    options, including eshell.
-
-+ When the current diredc directory is deleted from outside of diredc,
-  navigate to its parent
-
 + Make use of Emacs command 'find-file' perform consistently with
   diredc when within the diredc environment.
 
-+ Improve opening options for executable files.
 ** 2025-08
 + New feature to add bookmarks to history list direct navigation.
 
