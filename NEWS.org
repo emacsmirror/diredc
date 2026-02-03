@@ -1,4 +1,15 @@
 * diredc NEWS
+** 2026-02
++ New feature `diredc-rename-in-place`
+
+  + Mimics the basic rename feature of modern GUI file managers.
+
+  + Does *NOT* by default move the item to the location being visited
+    in the other `diredc` window.
+
+  +  As such, this function departs both from the usual approach of
+    `diredc`to behave like Midnight Commander, and from the Emacs
+    `wdired-mode` approach."
 
 ** 2025-11
 + Bug fixes to diredc shell windows
