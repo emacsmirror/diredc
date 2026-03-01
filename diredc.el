@@ -2513,6 +2513,7 @@ These bindings need to be performed \"early\" in order that they
 exist even if the shell process crashes, eg. due to a bad value
 in variables `explicit-bash-args'."
   (use-local-map (copy-keymap (current-local-map)))
+  ;; FIXME: 2025-09: eshell over-rides binding of  C-c C-k !
   (local-set-key (kbd "C-c C-k") 'diredc-shell-kill)
   (local-set-key [remap kill-buffer] 'diredc-shell-kill))
 
@@ -2896,6 +2897,19 @@ NEW is the new listing switch entry to use."
          (list (list default-directory 1 dired-omit-mode)))
        (t (list (list "/" 1 nil)))))
     (setq diredc-hist--history-position pos)))
+
+(defun diredc--check-current-dir ()
+  "Check if current `dired-directory' has been deleted.
+If yes, returns first valid parent directory. Otherwise returns
+`dired-directory'."
+  (let ((x dired-directory))
+    (when (not (file-directory-p x))
+      (while
+        (not (file-directory-p
+               (setq x
+                 (file-name-directory
+                   (directory-file-name x)))))))
+    x))
 
 (defun diredc--find-another-diredc-buffer (buf)
   "Find a live dired buffer other than BUF.
@@ -3945,6 +3959,7 @@ NON-NIL is equivalent to calling the function with a PREFIX-ARG."
     (diredc-hist--prune-deleted-directories))
   (let ((hist diredc-hist--history-list)
         (pos  diredc-hist--history-position)
+        (current-dir (diredc--check-current-dir))
         file-to-find new-file new-hist restore-point)
    (setq new-dir
      (cond
@@ -3979,8 +3994,8 @@ NON-NIL is equivalent to calling the function with a PREFIX-ARG."
       (t
         (expand-file-name
           (read-file-name "Select directory: "
-                          dired-directory
-                          dired-directory
+                          current-dir
+                          current-dir
                           t
                           nil
                           (lambda (x) (and (file-directory-p x)
