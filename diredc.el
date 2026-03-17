@@ -1648,6 +1648,21 @@ function `diredc-swap-windows'."
 ;;
 ;;; Functions - advice functions:
 
+(defun diredc--advice--dired-revert (orig-func &rest args)
+  "Display first existing parent of a deleted directory.
+
+Usage: (advice-add \\'dired-revert
+                   :around #\\'diredc--advice--dired-revert)
+
+This advice addresses the default Dired behavior of merely issuing an
+error message and displaying a blank window when the current directory
+has been deleted."
+  (when diredc-mode
+    (let ((valid-dir (diredc--check-current-dir)))
+      (if (string= dired-directory valid-dir)
+        (apply orig-func args)
+       (diredc-hist-change-directory valid-dir)))))
+
 (defun diredc--advice--wdired-exit ()
   "Ensure correct keymap when returning from wdired."
   (when diredc-mode
@@ -4528,6 +4543,8 @@ turn the mode on; Otherwise, turn it off."
                  :around #'diredc--advice--dired-internal-noselect)
      (advice-add 'dired-display-file
                  :around #'diredc--advice--dired-display-file)
+     (advice-add 'dired-revert
+                 :around #'diredc--advice--dired-revert)
      (when (< emacs-major-version 29)
        (advice-add 'dired-guess-default
                    :around #'diredc--advice--shell-guess-fallback))
@@ -4560,6 +4577,8 @@ turn the mode on; Otherwise, turn it off."
                     #'diredc--advice--repeat-over-lines)
      (advice-remove 'dired-display-file
                     #'diredc--advice--dired-display-file)
+     (advice-remove 'dired-revert
+                    #'diredc--advice--dired-revert)
      (when (< emacs-major-version 29)
        (advice-remove 'dired-guess-default
                       #'diredc--advice--shell-guess-fallback))
