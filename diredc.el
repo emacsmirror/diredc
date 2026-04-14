@@ -2328,7 +2328,9 @@ See customization variables `diredc-face-file-name-alist' and
     'append))
 
 (defun diredc--revert-all ()
-  "Revert visible `diredc' buffers."
+  "Revert visible `diredc' buffers.
+
+See function `diredc--update-control' and variable `diredc-update'."
   (dolist (elem (mapcar 'cdr dired-buffers))
     (when (and (buffer-live-p elem)
                (get-buffer-window elem))
