@@ -1887,11 +1887,11 @@ locally define `dired-read-shell-command'. See there."
         (setq-local dired-aux-files files)
         (setq-local minibuffer-default-add-function
                     #'minibuffer-default-add-dired-shell-commands))
-;; TODO: Function `minibuffer-default-add-dired-shell-commands' and
-;; variable `dired-aux-files' and were deleted from Emacs 30 by Emacs
-;; commit b8d4242 (2023-11-27 Juri Linkov) and new variable
-;; `shell-command-guess-function'. See also related Emacs commit
-;; 9ebe6aa (2024-05-24 Juri Linkov) and new command `dired-do-open'
+    ;; TODO: Function `minibuffer-default-add-dired-shell-commands' and
+    ;; variable `dired-aux-files' and were deleted from Emacs 30 by Emacs
+    ;; commit b8d4242 (2023-11-27 Juri Linkov) and new variable
+    ;; `shell-command-guess-function'. See also related Emacs commit
+    ;; 9ebe6aa (2024-05-24 Juri Linkov) and new command `dired-do-open'
     (setq prompt (format prompt (dired-mark-prompt arg files)))
     (let (command)
       (setq command
@@ -1901,8 +1901,10 @@ locally define `dired-read-shell-command'. See there."
          (dired-mark-pop-up nil 'shell files
                             'read-shell-command prompt nil nil)))
       ;; Validation checks of #48072:
-      (when (string= "" command)
-        (user-error "No command entered. Nothing to do!"))
+      (when  (string= "" command)
+        (if (file-executable-p (file-truename (car files)))
+          (setq command (file-truename (car files)))
+         (user-error "No command entered. Nothing to do!")))
       (unless (executable-find
                 (if (diredc--match-command command)
                   (match-string 1 command)
@@ -2984,7 +2986,7 @@ asynchronously."
       (while (and (not found)
                 (setq exec (pop execs)))
         (when (setq exec (executable-find exec))
-        (setq found t)
+          (setq found t)
           (dired-do-shell-command (format " %s &" exec) nil (list target)))))
     found))
 
@@ -3808,8 +3810,11 @@ overriding a setting of `diredc-async-processes-are-persistent'
 non-NIL.
 
 ARG is the prefix-arg."
+  ;; TODO: It seems that Emacs 30 has modifications addressing at
+  ;; least some part of bug report $48072, and has introduced other
+  ;; behavior differences ...
   (interactive
-   (let ((files (dired-get-marked-files t current-prefix-arg nil nil t)))
+   (let ((files (dired-get-marked-files nil current-prefix-arg nil nil t)))
      (cl-flet
        ;; We are re-defining `dired-read-shell-command' from
        ;; `dired-aux.el' because even if/when emacs bug #48072 is
@@ -3825,16 +3830,16 @@ ARG is the prefix-arg."
                 (setq-local dired-aux-files files)
                 (setq-local minibuffer-default-add-function
                             #'minibuffer-default-add-dired-shell-commands))
-;; TODO: Function `minibuffer-default-add-dired-shell-commands' and
-;; variable `dired-aux-files' and were deleted from Emacs 30 by Emacs
-;; commit b8d4242 (2023-11-27 Juri Linkov) and new variable
-;; `shell-command-guess-functions'. See also related Emacs commit
-;; 9ebe6aa (2024-05-24 Juri Linkov) and new command `dired-do-open'.
-;; See also related `dired-guess', `dired-guess-shell-alist-optional',
-;; `dired-guess-shell-alist-default', `dired-guess-shell-alist-user',
-;; `shell-command-guess-functions', `shell-command-guess-dired-user',
-;; `shell-command-guess-dired-default',
-;; `shell-command-guess-dired-optional'
+            ;; TODO: Function `minibuffer-default-add-dired-shell-commands' and
+            ;; variable `dired-aux-files' and were deleted from Emacs 30 by Emacs
+            ;; commit b8d4242 (2023-11-27 Juri Linkov) and new variable
+            ;; `shell-command-guess-functions'. See also related Emacs commit
+            ;; 9ebe6aa (2024-05-24 Juri Linkov) and new command `dired-do-open'.
+            ;; See also related `dired-guess', `dired-guess-shell-alist-optional',
+            ;; `dired-guess-shell-alist-default', `dired-guess-shell-alist-user',
+            ;; `shell-command-guess-functions', `shell-command-guess-dired-user',
+            ;; `shell-command-guess-dired-default',
+            ;; `shell-command-guess-dired-optional'
             (setq prompt (format prompt (dired-mark-prompt arg files)))
             (let (command)
               (setq command
@@ -3847,12 +3852,14 @@ ARG is the prefix-arg."
            ;; bug report and patch #48072:
            ;; (http://debbugs.gnu.org/cgi/bugreport.cgi?bug=48072)
               (when  (string= "" command)
-                (user-error "No command entered. Nothing to do!"))
+                (if (file-executable-p (car files))
+                  (setq command (car files))
+                 (user-error "No command entered. Nothing to do!")))
            ;; For diredc, we need to allow a SPACE command to allow
            ;; overriding a `diredc-async-processes-are-persistent'
            ;; value of non-NIL.
            ;; (unless (executable-find command)
-              (unless (or (string-match-p "^[ \t]+$" command)
+              (unless (or (string-match-p "^[ \t]*$" command)
                           (executable-find
                             (if (diredc--match-command command)
                               (match-string 1 command)
@@ -3865,15 +3872,18 @@ ARG is the prefix-arg."
       current-prefix-arg
       files))))
   (cond
-   ((string-match-p "^[ \t]+$" command)
+   ((string-match-p "^[ \t]*$" command)
      ;; no command entered, guess fallback
-     (setq command (format " %s &"
-                     (car (diredc--advice--shell-guess-fallback
-                          'dired-guess-default
-                          file-list)))))
+     (setq command
+       (if (file-executable-p (car file-list))
+         (car file-list)
+        (format " %s &"
+                (car (diredc--advice--shell-guess-fallback
+                     'dired-guess-default
+                     file-list))))))
    ((not (string-match-p "&[ \t]*\\'" command))
      ;; command entered, but without " &" suffix
-     (setq command (concat command " &"))))
+     (setq command (concat command ""))))
   (dired-do-shell-command command arg file-list))
 
 (defun diredc-history-mode (&optional arg)
