@@ -3111,22 +3111,20 @@ Emacs `wdired-mode` approach."
   (interactive)
   (when (not (eq major-mode 'dired-mode))
     (user-error "Not in a Dired buffer"))
-  (let (original-filename
-        renamed-filename)
-    (unless (dired-move-to-filename)
-      (user-error "Not on a file or directory line."))
-    (setq original-filename (directory-file-name (dired-file-name-at-point)))
+  (unless (dired-move-to-filename)
+    (user-error "Not on a file or directory line."))
+  (let ((original-filename (directory-file-name (dired-file-name-at-point))))
     (when (member (file-name-nondirectory original-filename) '("." ".."))
-      (user-error "Can't rename \".\" or \"..\" files"))
-    (setq renamed-filename
+      (user-error "Can't rename \".\" or \"..\" files."))
+    (dired-rename-file
+      original-filename
       (directory-file-name
-        (completing-read
-          "Rename file: "
+        (completing-read "Rename file: "
           nil ; COLLECTION
           nil ; PREDICATE
           nil ; REQUIRE-MATCH
-          original-filename))) ; INITIAL INPUT
-    (dired-rename-file original-filename renamed-filename nil)))
+          original-filename)) ; INITIAL INPUT
+      nil)))
 
 (defun diredc-shell-kill ()
   "Kill the current shell window, buffer, and process."
