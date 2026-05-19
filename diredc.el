@@ -4470,12 +4470,16 @@ second, by binding `Q' to `dired-do-find-regexp-and-replace'."
   (message "Use %s for diredc-exit, or M-x quit-window for the emacs primitive."
     (key-description (where-is-internal 'diredc-exit diredc-mode-map t))))
 
-(defun diredc-recover ()
+(defun diredc-recover (&optional non-interactive)
   "Attempt to restore a `dired' dual-pane layout.
 
 If possibly one or more `dired' frames and/or' buffers exist, but
 the layout on the frame has been \"somehow\" altered (\"ahem.. no
-judgements...\"), try this function."
+judgements...\"), try this function.
+
+The optional NON-INTERACTIVE argument suppresses prompting the user to
+choose among remediation options. In such a case, the first on the list
+is chosen."
   (interactive)
   (when (zerop (length diredc-recover-schemes))
     (error "Variable 'diredc-recover-schemes' corrupt"))
@@ -4497,13 +4501,11 @@ judgements...\"), try this function."
       (select-frame (pop temp-list))
       (while temp-list
         (delete-frame (pop temp-list)))))
-    (cond
-     ((= 1 (setq len (length (setq temp-list (reverse (window-list))))))
-       (split-window-right))
-     ((< 2 len)
-       (dotimes (_x (- len 2))
-         (delete-window (pop temp-list)))))
-    (setq temp-list nil)
+    (setq temp-list (reverse (window-list)))
+    (pop temp-list)
+    (while temp-list
+      (delete-window (pop temp-list)))
+    (split-window-right)
     (dolist (buf (buffer-list))
       (with-current-buffer buf
         (if (bound-and-true-p diredc-browse--buffer)
@@ -4514,7 +4516,8 @@ judgements...\"), try this function."
                    (1- (length diredc-recover-schemes))))
     (setq options (cdr (nth len diredc-recover-schemes)))
     (when (not (zerop (setq len (length options))))
-      (if (= 1 len)
+      (if (or non-interactive
+              (= 1 len))
         (setq decision (cdr (nth 0 options)))
        (while (or (not decision)
                   (zerop (length decision)))
